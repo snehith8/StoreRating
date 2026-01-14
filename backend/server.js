@@ -3,16 +3,29 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const PORT = 3001;
-const JWT_SECRET = 'your-secret-key-change-in-production';
 
-app.use(cors());
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// CORS configuration for production
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'Server is running' });
+});
 
 // Initialize SQLite Database
-const db = new sqlite3.Database('./store_ratings.db', (err) => {
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'store_ratings.db');
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) console.error('Database connection error:', err);
   else console.log('Connected to SQLite database');
 });
@@ -529,6 +542,6 @@ app.get('/api/store-owner/dashboard', authenticateToken, (req, res) => {
   );
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
